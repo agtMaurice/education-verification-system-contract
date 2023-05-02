@@ -1,3 +1,4 @@
+# Build an Educational Credential Verification System On the Celo Blockchain
 ---
 title: Build an Educational Credential Verification System On the Celo Blockchain
 description: In this tutorial, you will learn how to build a system to verify educational credentials on the blockchain
@@ -6,21 +7,42 @@ authors:
     url: https://github.com/agtMaurice
 ---
 
+#  Table of Content
+
+- [Introduction](#introduction)
+- [Prerequisites](#prerequisites)
+- [Tool used in this course](#tools)
+- [Getting wallet Ready](#getting-wallet-ready)
+- [Smart Contract](#smart-contract)
+- [Deployment](#deployment)
+- [Conclusion](#conclusion)
+- [Next Step](#next-step)
+
 ## Introduction
 
-In this tutorial, you will learn how to create an educational credential verification system on the Celo Blockchain. We will explore how to leverage blockchain technology for securely storing, validating, and verifying educational credentials such as degrees, diplomas, and certificates. By the end of this tutorial, you will be able to create and deploy your own educational credential verification system and understand the benefits of using blockchain technology for this purpose.
+Welcome to this DIY course where you will learn how to develop an educational credential verification system using the Celo Blockchain. This tutorial will guide you through the process of using blockchain technology to securely store, validate, and verify educational credentials like certificates, diplomas, and degrees. You will gain the necessary skills to create and deploy your educational credential verification system, and comprehend the advantages of using blockchain technology for this purpose. By the end of this course, you'll be able to build a reliable educational credential verification system for your own purposes.
 
 [Full source code](https://github.com/agtMaurice/education-verification-system-contract.git)
 
 ## Prerequisites
 
-To follow this tutorial, you will need the following:
+To follow this tutorial, you will need a basic knowledge of Solidity programming language and a Development Environment Like Remix
 
-- Basic knowledge of Solidity programming language.
-- A Development Environment Like Remix.
-- The celo Extension Wallet.
+## Tools
+  - [nodejs](https://nodejs.org/en/download)
+  - Google Chrome
+  - 
+  - [The celo Extension Wallet](https://chrome.google.com/webstore/detail/celoextensionwallet/kkilomkmpmkbdnfelcpgckmpcaemjcdh?hl=en)
 
-## SmartContract
+## Getting wallet Ready
+
+We have to get our wallet ready for deplloyment of the contract;
+
+- Click on the celo wallet extension on your browser(preferably chrome) and you can either create a new wallet or import with a seed phrase (Note: The seed phrase is important, you should keep it to yourself as it can give other full control to your wallet).
+- Hopefully you are done with either creating the wallet or importing one(if you had a wallet previously that you still know the seed phrase), cgot to the [Faucet](https://faucet.celo.org/alfajores) website to get test celo dollar(cUSD)
+
+
+## Smart Contract
 
 Let's begin writing our smart contract in Remix IDE
 
@@ -41,18 +63,17 @@ contract EducationCredentialVerification is ERC721, AccessControl {
 
     struct Credential {
         uint256 tokenId;
-        string institution;
-        string degree;
-        string major;
-        string studentName;
-        uint256 dateIssued;
-        bool isRevoked;
+        bytes32 institution;
+        bytes32 degree;
+        bytes32 major;
+        bytes32 studentName;
+        uint32 dateIssued;
     }
 
     mapping(uint256 => Credential) public credentials;
     Counters.Counter private _tokenIds;
 
-    event CredentialIssued(uint256 indexed tokenId, string studentName, string degree, string major, string institution, uint256 dateIssued);
+    event CredentialIssued(uint256 indexed tokenId, bytes32 studentName, bytes32 degree, bytes32 major, bytes32 institution, uint32 dateIssued);
     event CredentialRevoked(uint256 indexed tokenId);
 
     constructor() ERC721("EducationCredential", "EDUC") {
@@ -60,11 +81,11 @@ contract EducationCredentialVerification is ERC721, AccessControl {
     }
 
     function issueCredential(
-        string memory institution,
-        string memory degree,
-        string memory major,
-        string memory studentName,
-        uint256 dateIssued,
+        bytes32 institution,
+        bytes32 degree,
+        bytes32 major,
+        bytes32 studentName,
+        uint32 dateIssued,
         address recipient
     ) public onlyRole(ISSUER_ROLE) {
         _tokenIds.increment();
@@ -77,8 +98,7 @@ contract EducationCredentialVerification is ERC721, AccessControl {
             degree,
             major,
             studentName,
-            dateIssued,
-            false
+            dateIssued
         );
 
         credentials[tokenId] = newCredential;
@@ -89,13 +109,13 @@ contract EducationCredentialVerification is ERC721, AccessControl {
     function revokeCredential(uint256 tokenId) public onlyRole(ISSUER_ROLE) {
         require(_exists(tokenId), "Credential not found");
 
-        credentials[tokenId].isRevoked = true;
+        delete credentials[tokenId];
 
         emit CredentialRevoked(tokenId);
     }
 
     function isCredentialValid(uint256 tokenId) public view returns (bool) {
-        return _exists(tokenId) && !credentials[tokenId].isRevoked;
+        return _exists(tokenId) && credentials[tokenId].dateIssued != 0;
     }
 
     function getCredential(uint256 tokenId) public view returns (Credential memory) {
@@ -116,6 +136,7 @@ contract EducationCredentialVerification is ERC721, AccessControl {
         return super.supportsInterface(interfaceId);
     }
 }
+
 
 ```
 
@@ -144,12 +165,11 @@ contract EducationCredentialVerification is ERC721, AccessControl {
 
     struct Credential {
         uint256 tokenId;
-        string institution;
-        string degree;
-        string major;
-        string studentName;
-        uint256 dateIssued;
-        bool isRevoked;
+        bytes32 institution;
+        bytes32 degree;
+        bytes32 major;
+        bytes32 studentName;
+        uint32 dateIssued;
     }
 
     mapping(uint256 => Credential) public credentials;
@@ -167,7 +187,6 @@ We created a struct `Credential`, which is used to store the details of each edu
   major: The student's area of study.
 - `studentName`: The name of the student who earned the credential.
   dateIssued: The date the credential was issued.
-- `isRevoked`: A boolean value indicating whether the credential has been revoked.
 
 A mapping `credentials` is used to store the credentials issued by educational institutions. The keys in the mapping are the `tokenIds` of the educational credentials, and the values are instances of the Credential struct.
 
@@ -193,11 +212,11 @@ The constructor sets up the default admin role and initializes the `ERC-721` tok
 
 ```solidity
 function issueCredential(
-        string memory institution,
-        string memory degree,
-        string memory major,
-        string memory studentName,
-        uint256 dateIssued,
+        bytes32 institution,
+        bytes32 degree,
+        bytes32 major,
+        bytes32 studentName,
+        uint32 dateIssued,
         address recipient
     ) public onlyRole(ISSUER_ROLE) {
         _tokenIds.increment();
@@ -210,8 +229,7 @@ function issueCredential(
             degree,
             major,
             studentName,
-            dateIssued,
-            false
+            dateIssued
         );
 
         credentials[tokenId] = newCredential;
@@ -228,22 +246,37 @@ The function then creates a new unique `tokenId` using the Counters library, min
   function revokeCredential(uint256 tokenId) public onlyRole(ISSUER_ROLE) {
         require(_exists(tokenId), "Credential not found");
 
-        credentials[tokenId].isRevoked = true;
+        delete credentials[tokenId];
 
         emit CredentialRevoked(tokenId);
     }
 ```
 
-The `revokeCredential` function is used by educational institutions to revoke previously issued educational credentials. The function takes in a `tokenId` as an argument, checks if the credential exists, and sets the `isRevoked` attribute of the corresponding `Credential` struct to true. Finally, the function emits the `CredentialRevoked` event.
+This code defines a function called `revokeCredential` that takes in a single argument called `tokenId` of type `uint256`. 
+
+The function is marked as `public` which means it can be called from outside the contract. It also has the modifier `onlyRole(ISSUER_ROLE)` which restricts access to users who have been granted the `ISSUER_ROLE` role in the contract. 
+
+The first line of the function checks if the credential with the given `tokenId` exists using the `_exists` function provided by the OpenZeppelin ERC721 implementation. If the credential doesn't exist, it throws an error with the message "Credential not found" using the `require` statement.
+
+The second line of the function deletes the credential from the `credentials` mapping using the `delete` keyword. This sets all values of the `Credential` struct to their default value, effectively removing the credential from storage. 
+
+Finally, the function emits an event called `CredentialRevoked` with the `tokenId` as an argument to notify any listeners that the credential has been revoked.
 
 ```solidity
 function isCredentialValid(uint256 tokenId) public view returns (bool) {
-        return _exists(tokenId) && !credentials[tokenId].isRevoked;
+        return _exists(tokenId) && credentials[tokenId].dateIssued != 0;
     }
 ```
 
-The `isCredentialValid` function is used to verify if a given educational credential is valid. The function takes in a `tokenId` and checks if the corresponding credential exists and if it has been revoked. If the credential is valid, the function returns true, otherwise, it returns false.
+This code defines a function called `isCredentialValid`. The function takes one input parameter, which is an unsigned integer called `tokenId`. 
 
+The function is defined as a `public` function, which means anyone can call it. It is also defined as a `view` function, which means that it will not change the state of the blockchain when it is called. 
+
+The function returns a boolean value, either `true` or `false`, depending on whether the given `tokenId` represents a valid credential or not. 
+
+The function checks two conditions using the `&&` operator:
+- The first condition is `_exists(tokenId)`, which calls an OpenZeppelin function to check if the token exists on the blockchain. If the token does not exist, the function returns `false`.
+- The second condition is `credentials[tokenId].dateIssued != 0`, which checks if the dateIssued attribute of the credential stored at the given `tokenId` is not equal to zero. If the dateIssued is not equal to zero, then the function returns `true`, indicating that the credential is valid. If the dateIssued is equal to zero, then the function returns `false`, indicating that the credential is not valid.
 ```solidity
 function getCredential(uint256 tokenId) public view returns (Credential memory) {
         require(_exists(tokenId), "Credential not found");
@@ -290,7 +323,7 @@ Next connect your celo wallet, select the contract you want to deploy and finall
 
 The `EducationCredentialVerification` contract provides a way for educational institutions to issue and verify educational credentials on the blockchain. By using the `ERC-721` token standard and the `AccessControl` library, the contract allows for the creation of unique and verifiable educational credentials. The contract also allows for the granting and revoking of roles to educational institutions.
 
-## Next Steps
+## Next Step
 
 I hope you learned a lot from this tutorial. Here are some relevant links that would aid your learning further.
 
