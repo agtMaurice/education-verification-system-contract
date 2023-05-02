@@ -1,11 +1,11 @@
 # Build an Educational Credential Verification System On the Celo Blockchain
----
-title: Build an Educational Credential Verification System On the Celo Blockchain
-description: In this tutorial, you will learn how to build a system to verify educational credentials on the blockchain
-authors:
-  - name: ✍️ Agatha Maurice
-    url: https://github.com/agtMaurice
----
+Welcome to our DIY course on how to build a blockchain-based system to verify educational credentials! In this course, you will learn how to create a smart contract on the Ethereum blockchain that can issue, revoke, and verify educational credentials.
+
+  #  Author's Name ✍️
+  Agatha Maurice
+  # Complete  Repository Url
+  https://github.com/agtMaurice
+
 
 #  Table of Content
 
