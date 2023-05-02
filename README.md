@@ -6,6 +6,19 @@ authors:
     url: https://github.com/agtMaurice
 ---
 
+# Build an Educational Credential Verification System on the Celo Blockchain
+
+## Table of Contents
+- [Build an Educational Credential Verification System on the Celo Blockchain](#build-an-educational-credential-verification-system-on-the-celo-blockchain)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Prerequisites](#prerequisites)
+  - [Smart Contract](#smart-contract)
+    - [Breakdown](#breakdown)
+  - [Deployment](#deployment)
+  - [Conclusion](#conclusion)
+  - [Next Steps](#next-steps)
+
 ## Introduction
 
 In this tutorial, you will learn how to create an educational credential verification system on the Celo Blockchain. We will explore how to leverage blockchain technology for securely storing, validating, and verifying educational credentials such as degrees, diplomas, and certificates. By the end of this tutorial, you will be able to create and deploy your own educational credential verification system and understand the benefits of using blockchain technology for this purpose.
@@ -20,7 +33,7 @@ To follow this tutorial, you will need the following:
 - A Development Environment Like Remix.
 - The celo Extension Wallet.
 
-## SmartContract
+## Smart Contract
 
 Let's begin writing our smart contract in Remix IDE
 
