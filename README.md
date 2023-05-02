@@ -63,6 +63,8 @@ contract EducationCredentialVerification is ERC721, AccessControl {
     }
 
     mapping(uint256 => Credential) public credentials;
+    mapping(uint => mapping(address => bool)) public isIssuer;
+
     Counters.Counter private _tokenIds;
 
     event CredentialIssued(uint256 indexed tokenId, string studentName, string degree, string major, string institution, uint256 dateIssued);
@@ -72,6 +74,16 @@ contract EducationCredentialVerification is ERC721, AccessControl {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
+    /**
+        * @dev Only Authorized Issuers can issue credentials
+        * @notice Allow authorized education institutions to issue credentials
+        * @param institution The name of the education institution of the degree
+        * @param degree The course/study of the credential
+        * @param major The main subject of the degree
+        * @param studentName The name of the student
+        * @param dateIssued The timestamp of when the degree was awarded
+        * @param recipient The address of the degree's holder
+    */
     function issueCredential(
         string memory institution,
         string memory degree,
@@ -80,10 +92,13 @@ contract EducationCredentialVerification is ERC721, AccessControl {
         uint256 dateIssued,
         address recipient
     ) public onlyRole(ISSUER_ROLE) {
+        require(recipient != address(0), "The zero address is not a valid recipient");
+        require(dateIssued > 0, "Invalid date issued");
         _tokenIds.increment();
         uint256 tokenId = _tokenIds.current();
         _safeMint(recipient, tokenId);
 
+        isIssuer[tokenId][msg.sender] = true;
         Credential memory newCredential = Credential(
             tokenId,
             institution,
@@ -99,9 +114,14 @@ contract EducationCredentialVerification is ERC721, AccessControl {
         emit CredentialIssued(tokenId, studentName, degree, major, institution, dateIssued);
     }
 
+    /**
+        * @dev Only the issuer of the credential can revoke it.
+        * @notice Allow educational institutions to revoke credentials they have awarded
+        * @param tokenId The index of the credential
+    */
     function revokeCredential(uint256 tokenId) public onlyRole(ISSUER_ROLE) {
         require(_exists(tokenId), "Credential not found");
-
+        require(isIssuer[tokenId][msg.sender],"You are not the issuer of this credential");
         credentials[tokenId].isRevoked = true;
 
         emit CredentialRevoked(tokenId);
@@ -117,10 +137,19 @@ contract EducationCredentialVerification is ERC721, AccessControl {
         return credentials[tokenId];
     }
 
+    /**
+        * @dev Only the admin can grant the issuer role to other users
+        * @param account The address to be granted the issuer role
+    */
     function grantIssuerRole(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
         grantRole(ISSUER_ROLE, account);
     }
 
+    
+    /**
+        * @dev Only the admin can revoke the issuer role
+        * @param account The address of the issuer to be revoked
+    */
     function revokeIssuerRole(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
         revokeRole(ISSUER_ROLE, account);
     }
@@ -166,6 +195,7 @@ contract EducationCredentialVerification is ERC721, AccessControl {
     }
 
     mapping(uint256 => Credential) public credentials;
+    mapping(uint => mapping(address => bool)) public isIssuer;
     Counters.Counter private _tokenIds;
 }
 ```
@@ -205,7 +235,18 @@ constructor() ERC721("EducationCredential", "EDUC") {
 The constructor sets up the default admin role and initializes the `ERC-721` token by setting its name to `EducationCredential` and its symbol to `EDUC`.
 
 ```solidity
-function issueCredential(
+
+    /**
+        * @dev Only Authorized Issuers can issue credentials
+        * @notice Allow authorized education institutions to issue credentials
+        * @param institution The name of the education institution of the degree
+        * @param degree The course/study of the credential
+        * @param major The main subject of the degree
+        * @param studentName The name of the student
+        * @param dateIssued The timestamp of when the degree was awarded
+        * @param recipient The address of the degree's holder
+    */
+    function issueCredential(
         string memory institution,
         string memory degree,
         string memory major,
@@ -213,10 +254,13 @@ function issueCredential(
         uint256 dateIssued,
         address recipient
     ) public onlyRole(ISSUER_ROLE) {
+        require(recipient != address(0), "The zero address is not a valid recipient");
+        require(dateIssued > 0, "Invalid date issued");
         _tokenIds.increment();
         uint256 tokenId = _tokenIds.current();
         _safeMint(recipient, tokenId);
 
+        isIssuer[tokenId][msg.sender] = true;
         Credential memory newCredential = Credential(
             tokenId,
             institution,
@@ -238,16 +282,21 @@ The `issueCredential` function is used by educational institutions to issue educ
 The function then creates a new unique `tokenId` using the Counters library, mints a new `ERC-721` token using the `_safeMint` function, and assigns the token to the recipient address. Finally, the function creates a new instance of the Credential struct, stores it in the credentials mapping, and emits the `CredentialIssued` event.
 
 ```solidity
-  function revokeCredential(uint256 tokenId) public onlyRole(ISSUER_ROLE) {
+    /**
+        * @dev Only the issuer of the credential can revoke it.
+        * @notice Allow educational institutions to revoke credentials they have awarded
+        * @param tokenId The index of the credential
+    */
+    function revokeCredential(uint256 tokenId) public onlyRole(ISSUER_ROLE) {
         require(_exists(tokenId), "Credential not found");
-
+        require(isIssuer[tokenId][msg.sender],"You are not the issuer of this credential");
         credentials[tokenId].isRevoked = true;
 
         emit CredentialRevoked(tokenId);
     }
 ```
 
-The `revokeCredential` function is used by educational institutions to revoke previously issued educational credentials. The function takes in a `tokenId` as an argument, checks if the credential exists, and sets the `isRevoked` attribute of the corresponding `Credential` struct to **true**. Finally, the function emits the `CredentialRevoked` event.
+The `revokeCredential` function is used by educational institutions to revoke previously issued educational credentials. The function takes in a `tokenId` as an argument, checks if the credential exists and whether `msg.sender` is the issuer of the credential, and sets the `isRevoked` attribute of the corresponding `Credential` struct to **true**. Finally, the function emits the `CredentialRevoked` event.
 
 ```solidity
 function isCredentialValid(uint256 tokenId) public view returns (bool) {
@@ -268,12 +317,21 @@ function getCredential(uint256 tokenId) public view returns (Credential memory) 
 The `getCredential` function is used to retrieve the details of a given educational credential. The function takes in a `tokenId` and checks if the corresponding credential exists. If it does, the function returns the corresponding `Credential` struct.
 
 ```solidity
-function grantIssuerRole(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-    grantRole(ISSUER_ROLE, account);
+    /**
+        * @dev Only the admin can grant the issuer role to other users
+        * @param account The address to be granted the issuer role
+    */
+    function grantIssuerRole(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(ISSUER_ROLE, account);
     }
 
-function revokeIssuerRole(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-    revokeRole(ISSUER_ROLE, account);
+    
+    /**
+        * @dev Only the admin can revoke the issuer role
+        * @param account The address of the issuer to be revoked
+    */
+    function revokeIssuerRole(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        revokeRole(ISSUER_ROLE, account);
     }
 ```
 
